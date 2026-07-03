@@ -35,14 +35,20 @@ const useStyles = makeStyles({
 const Index: React.FC = () => {
   useConsoleSuppression();
 
-  const [isDarkMode, setIsDarkMode] = useState(() =>
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  );
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const stored = localStorage.getItem("cps-theme");
+    if (stored === "dark") return true;
+    if (stored === "light") return false;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (event: MediaQueryListEvent) => {
-      setIsDarkMode(event.matches);
+      // Only follow the OS preference when the user has not made an explicit choice.
+      if (!localStorage.getItem("cps-theme")) {
+        setIsDarkMode(event.matches);
+      }
     };
 
     mediaQuery.addEventListener("change", handleChange);
@@ -50,7 +56,11 @@ const Index: React.FC = () => {
   }, []);
 
   const toggleTheme = () => {
-    setIsDarkMode((prev) => !prev);
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      localStorage.setItem("cps-theme", next ? "dark" : "light");
+      return next;
+    });
   };
 
   const styles = useStyles();

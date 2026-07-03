@@ -10,6 +10,51 @@ metadata:
   template: content-processing@1.0
   name: content-processinge@1.0
 
+infra:
+  path: infra
+  module: main_custom
+
+services:
+  contentprocessor:
+    project: ./src/ContentProcessor
+    language: py
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      image: contentprocessor
+      registry: ${AZURE_CONTAINER_REGISTRY_ENDPOINT}
+      remoteBuild: true
+
+  contentprocessorapi:
+    project: ./src/ContentProcessorAPI
+    language: py
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      image: contentprocessorapi
+      registry: ${AZURE_CONTAINER_REGISTRY_ENDPOINT}
+      remoteBuild: true
+
+  contentprocessorweb:
+    project: ./src/ContentProcessorWeb
+    language: js
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      image: contentprocessorweb
+      registry: ${AZURE_CONTAINER_REGISTRY_ENDPOINT}
+      remoteBuild: true
+
+  contentprocessorworkflow:
+    project: ./src/ContentProcessorWorkflow
+    language: py
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      image: contentprocessorworkflow
+      registry: ${AZURE_CONTAINER_REGISTRY_ENDPOINT}
+      remoteBuild: true
+
 hooks:
   postprovision:
     posix:

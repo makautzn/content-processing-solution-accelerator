@@ -20,10 +20,12 @@ import {
   MenuItem,
   MenuDivider,
   Avatar,
+  Button,
+  Tooltip,
 } from "@fluentui/react-components";
 import { ArrowExit } from "../../Imports/bundleIcons";
 import MainLogo from "../../Imports/MainLogo.svg";
-import { DocumentBulletListCubeRegular, InfoRegular } from "@fluentui/react-icons";
+import { DocumentBulletListCubeRegular, InfoRegular, WeatherSunnyRegular, WeatherMoonRegular } from "@fluentui/react-icons";
 
 import useAuth from "../../msal-auth/useAuth";
 import { useSelector, shallowEqual } from 'react-redux';
@@ -127,6 +129,19 @@ const HeaderPage: React.FC<HeaderPageProps> = ({ toggleTheme, isDarkMode }) => {
         <InfoRegular style={{ marginRight: "4px" }} />
         <span>AI-generated content may be incorrect</span>
       </div>
+
+      {/* Theme toggle (always visible) */}
+      <Tooltip
+        content={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+        relationship="label"
+      >
+        <Button
+          appearance="subtle"
+          icon={isDarkMode ? <WeatherSunnyRegular /> : <WeatherMoonRegular />}
+          onClick={toggleTheme}
+          aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+        />
+      </Tooltip>
 
       {/* Tools Section */}
       { authEnabled && 
