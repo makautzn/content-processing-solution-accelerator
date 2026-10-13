@@ -41,6 +41,7 @@ import { setRefreshGrid } from "../../store/slices/leftPanelSlice";
 import PanelToolbar from "../../Hooks/usePanelHooks";
 import JSONEditor from "../../Components/JSONEditor/JSONEditor";
 import ProcessSteps from './Components/ProcessSteps/ProcessSteps';
+import { parseGapAnalysis } from './gapAnalysis';
 
 import "../../Styles/App.css";
 const ChevronDoubleLeft = bundleIcon(ChevronDoubleLeft20Regular, ChevronDoubleLeft20Filled);
@@ -203,25 +204,6 @@ const PanelCenter: React.FC<PanelCenterProps> = ({ togglePanel }) => {
     }
   }, [store.claimDetails])
 
-  const getProcessGapsData = React.useCallback((): Record<string, unknown> => {
-    const claimData = (store.claimDetails?.data ?? {}) as Record<string, unknown>;
-    const rawProcessGaps = claimData.process_gaps;
-
-    if (typeof rawProcessGaps === 'string') {
-      try {
-        return JSON.parse(rawProcessGaps) as Record<string, unknown>;
-      } catch {
-        return {};
-      }
-    }
-
-    if (typeof rawProcessGaps === 'object' && rawProcessGaps !== null) {
-      return rawProcessGaps as Record<string, unknown>;
-    }
-
-    return {};
-  }, [store.claimDetails]);
-
   const AISummary = React.useCallback(() => {
     return (
     <div role="tabpanel" className={styles.tabItemCotnent} aria-labelledby="AI Summary">
@@ -241,11 +223,8 @@ const PanelCenter: React.FC<PanelCenterProps> = ({ togglePanel }) => {
   )}, [store.claimDetails, store.claimDetailsLoader, styles.tabItemCotnent, styles.apiLoader]);
 
   const GapAnalysis = React.useCallback(() => {
-    const processGaps = getProcessGapsData();
-
-    const narrativeReport = typeof processGaps.narrative_report === 'string'
-      ? processGaps.narrative_report
-      : '';
+    const claimData = (store.claimDetails?.data ?? {}) as Record<string, unknown>;
+    const analysis = parseGapAnalysis(claimData.process_gaps);
 
     return (
     <div role="tabpanel" className={styles.tabItemCotnent} aria-labelledby="Gap Analysis">
@@ -255,14 +234,17 @@ const PanelCenter: React.FC<PanelCenterProps> = ({ togglePanel }) => {
         <div style={{ padding: '16px' }}>
           <div style={{ marginBottom: '16px' }}>
             <h4 style={{ margin: '0 0 8px 0', color: tokens.colorNeutralForeground1 }}>Gap Analysis</h4>
-            <p style={{ margin: 0, color: tokens.colorNeutralForeground2, whiteSpace: 'pre-wrap' }}>
-              {narrativeReport || 'No gaps identified'}
+            <p role={analysis.status === 'invalid' ? 'alert' : undefined}
+              style={{ margin: 0, color: tokens.colorNeutralForeground2, whiteSpace: 'pre-wrap' }}>
+              {analysis.status === 'available' ? analysis.narrative
+                : analysis.status === 'invalid' ? analysis.message
+                : 'Gap analysis is not available yet.'}
             </p>
           </div>
         </div>
       ) : <p style={{ textAlign: 'center' }}>No claim selected</p>}
     </div>
-  )}, [getProcessGapsData, store.claimDetails, store.claimDetailsLoader, styles.tabItemCotnent, styles.apiLoader]);
+  )}, [store.claimDetails, store.claimDetailsLoader, styles.tabItemCotnent, styles.apiLoader]);
 
   const ExtractedResults = React.useCallback(() => (
     <div role="tabpanel" className={styles.tabItemCotnent} aria-labelledby="Extracted Results">

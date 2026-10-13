@@ -51,6 +51,7 @@ class GapExecutor(Executor):
 
     _PROMPT_FILE_NAME = "gap_executor_prompt.txt"
     _RULES_FILE_NAME = "fnol_gap_rules.dsl.yaml"
+    _MAX_OUTPUT_TOKENS = 16384
 
     def __init__(self, id: str, app_context: AppContext):
         """Create a new GAP executor bound to an application context."""
@@ -93,6 +94,31 @@ class GapExecutor(Executor):
 
         return prompt_template.replace("{{RULES_DSL}}", rules_text)
 
+    @staticmethod
+    def _validate_gap_report(text: str) -> None:
+        try:
+            report = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                "Gap analysis returned invalid or truncated JSON."
+            ) from exc
+
+        if not isinstance(report, dict):
+            raise RuntimeError("Gap analysis must return a JSON object.")
+        if report.get("status") not in ("ok", "mismatched", "inappropriate"):
+            raise RuntimeError("Gap analysis returned an invalid status.")
+        for key in ("documents", "gaps", "discrepancies", "observations"):
+            items = report.get(key)
+            if not isinstance(items, list) or any(
+                not isinstance(item, dict) for item in items
+            ):
+                raise RuntimeError(f"Gap analysis returned an invalid '{key}' list.")
+        if not isinstance(report.get("inputs"), dict):
+            raise RuntimeError("Gap analysis returned invalid inputs.")
+        narrative = report.get("narrative_report")
+        if not isinstance(narrative, str) or not narrative.strip():
+            raise RuntimeError("Gap analysis returned no narrative report.")
+
     @handler
     async def handle_execute(
         self,
@@ -130,21 +156,7 @@ class GapExecutor(Executor):
         )
 
         if document_results is None:
-            # If no document results found, return an error status
-            gap_analysis_summary = {
-                "status": "error",
-                "message": "No document results to analyze gaps.",
-            }
-
-            result.workflow_process_outputs.append(
-                Executor_Output(
-                    step_name="gap_analysis", output_data=gap_analysis_summary
-                )
-            )
-
-            ctx.set_state("workflow_output", result)
-            await ctx.yield_output(result)
-            return
+            raise RuntimeError("No document results to analyze gaps.")
 
         processed_files: list[ExtractedFile] = []
 
@@ -161,6 +173,9 @@ class GapExecutor(Executor):
                 )
                 processed_files.append(extracted_file)
 
+        if not processed_files:
+            raise RuntimeError("No successfully processed documents to analyze gaps.")
+
         agent_framework_helper = self.app_context.get_service(AgentFrameworkHelper)
         agent_client = await agent_framework_helper.get_client_async("default")
 
@@ -176,6 +191,8 @@ class GapExecutor(Executor):
             .with_instructions(claim_gap_analysis_prompt)
             .with_temperature(0.1)
             .with_top_p(0.1)
+            .with_max_tokens(self._MAX_OUTPUT_TOKENS)
+            .with_additional_chat_options({"response_format": {"type": "json_object"}})
             .build()
         )
 
@@ -194,10 +211,16 @@ class GapExecutor(Executor):
             )
         )
 
+        self._validate_gap_report(model_response.text)
+
         claim_process_repository = self.app_context.get_service(Claim_Processes)
-        await claim_process_repository.Update_Claim_Process_Gaps(
+        updated_claim = await claim_process_repository.Update_Claim_Process_Gaps(
             process_id=result.claim_process_id, new_gaps=model_response.text
         )
+        if updated_claim is None:
+            raise RuntimeError(
+                f"Claim '{result.claim_process_id}' not found when saving gap analysis."
+            )
 
         gap_result = {"status": "gap_processed", "output": model_response.text}
 

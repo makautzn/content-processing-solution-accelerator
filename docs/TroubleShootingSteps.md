@@ -157,6 +157,18 @@ Use these as quick reference guides to unblock your deployments.
 
 > For the full technical details of the claim workflow architecture, see [Claim Processing Workflow](./ClaimProcessWorkflow.md).
 
+### Empty or invalid AI Gap Analysis
+
+The AI Gap Analysis tab displays `narrative_report` from the claim detail API's
+`data.process_gaps` JSON string. Missing or invalid reports are not evidence that
+there are no gaps. An invalid/incomplete report is displayed as an explicit error.
+
+The workflow requests JSON output with a 16,384-token completion budget and
+validates the report before saving it. Invalid JSON or a missing narrative fails
+the workflow rather than marking the claim Completed with an unusable report.
+After deploying the fix, reprocess affected claims to regenerate their reports;
+the deployment does not repair previously saved reports automatically.
+
 | Issue/Error Code | Description | Steps to Resolve |
 |-----------------|-------------|------------------|
 | **ClaimProcessingStuck** | Claim status is not progressing through stages (pending → document_processing → summarizing → gap_analysis → completed) | <ul><li>**Check ContentProcessorWorkflow container health:** Verify the `ca-<randomname>-wkfl` container app is running:<br>`az containerapp show --name <workflow-app-name> --resource-group <rg-name> --query "properties.runningStatus"`</li><li>**Check queue messages:** Verify messages are being placed on `claim-process-queue` in the Storage Account</li><li>**Review container logs:** Check the workflow container logs for errors:<br>`az containerapp logs show --name <workflow-app-name> --resource-group <rg-name>`</li><li>**Verify App Configuration:** Ensure the queue connection string and Cosmos DB settings are correct in Azure App Configuration</li></ul> |
