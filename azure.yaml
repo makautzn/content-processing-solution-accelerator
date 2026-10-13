@@ -12,7 +12,7 @@ metadata:
 
 infra:
   path: infra
-  module: main_custom
+  module: main
 
 services:
   contentprocessor:

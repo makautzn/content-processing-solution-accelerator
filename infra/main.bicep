@@ -938,7 +938,7 @@ module avmContainerApp 'br/public:avm/res/app/container-app:0.22.1' = {
       maxReplicas: enableScalability ? 3 : 2
       minReplicas: enableScalability ? 2 : 1
     }
-    tags: tags
+    tags: union(tags, { 'azd-service-name': 'contentprocessor' })
   }
 }
 
@@ -957,7 +957,7 @@ module avmContainerApp_API 'br/public:avm/res/app/container-app:0.22.1' = {
         identity: avmContainerRegistryReader.outputs.resourceId
       }
     ]
-    tags: tags
+    tags: union(tags, { 'azd-service-name': 'contentprocessorapi' })
     managedIdentities: {
       systemAssigned: true
       userAssignedResourceIds: [
@@ -1094,7 +1094,7 @@ module avmContainerApp_Web 'br/public:avm/res/app/container-app:0.22.1' = {
         identity: avmContainerRegistryReader.outputs.resourceId
       }
     ]
-    tags: tags
+    tags: union(tags, { 'azd-service-name': 'contentprocessorweb' })
     managedIdentities: {
       systemAssigned: true
       userAssignedResourceIds: [
@@ -1132,6 +1132,10 @@ module avmContainerApp_Web 'br/public:avm/res/app/container-app:0.22.1' = {
           {
             name: 'APP_API_BASE_URL'
             value: 'https://${avmContainerApp_API.outputs.fqdn}'
+          }
+          {
+            name: 'APP_AUTH_ENABLED'
+            value: 'false'
           }
           {
             name: 'APP_WEB_CLIENT_ID'
@@ -1182,7 +1186,7 @@ module avmContainerApp_Workflow 'br/public:avm/res/app/container-app:0.22.1' = {
         identity: avmContainerRegistryReader.outputs.resourceId
       }
     ]
-    tags: tags
+    tags: union(tags, { 'azd-service-name': 'contentprocessorworkflow' })
     managedIdentities: {
       systemAssigned: true
       userAssignedResourceIds: [
@@ -1248,7 +1252,9 @@ module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.19.0' = {
     mongodbDatabases: [
       {
         name: 'default'
-        tag: 'default database'
+        tags: {
+          description: 'default database'
+        }
       }
     ]
     tags: tags
@@ -1565,7 +1571,7 @@ module avmContainerApp_update 'br/public:avm/res/app/container-app:0.22.1' = {
         identity: avmContainerRegistryReader.outputs.resourceId
       }
     ]
-    tags: tags
+    tags: union(tags, { 'azd-service-name': 'contentprocessor' })
     managedIdentities: {
       systemAssigned: true
       userAssignedResourceIds: [
@@ -1652,7 +1658,7 @@ module avmContainerApp_API_update 'br/public:avm/res/app/container-app:0.22.1' =
         identity: avmContainerRegistryReader.outputs.resourceId
       }
     ]
-    tags: tags
+    tags: union(tags, { 'azd-service-name': 'contentprocessorapi' })
     managedIdentities: {
       systemAssigned: true
       userAssignedResourceIds: [
@@ -1793,7 +1799,7 @@ module avmContainerApp_Workflow_update 'br/public:avm/res/app/container-app:0.22
         identity: avmContainerRegistryReader.outputs.resourceId
       }
     ]
-    tags: tags
+    tags: union(tags, { 'azd-service-name': 'contentprocessorworkflow' })
     managedIdentities: {
       systemAssigned: true
       userAssignedResourceIds: [
@@ -1889,3 +1895,6 @@ output CONTENT_UNDERSTANDING_ACCOUNT_NAME string = avmAiServices.outputs.name
 
 @description('The resource group the resources were deployed into.')
 output AZURE_RESOURCE_GROUP string = resourceGroup().name
+
+@description('Registry endpoint consumed by azd')
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = avmContainerRegistry.outputs.loginServer

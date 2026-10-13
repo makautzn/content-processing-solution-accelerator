@@ -26,6 +26,9 @@
     "existingLogAnalyticsWorkspaceId": {
       "value": "${AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID}"
     },
+    "enablePrivateNetworking": { "value": "${ENABLE_PRIVATE_NETWORKING=false}" },
+    "vmAdminUsername": { "value": "${VM_ADMIN_USERNAME}" },
+    "vmAdminPassword": { "value": "${VM_ADMIN_PASSWORD}" },
     "existingFoundryProjectResourceId": {
       "value": "${AZURE_EXISTING_AIPROJECT_RESOURCE_ID}"
     }
