@@ -301,7 +301,43 @@ azd up
 
 ## Step 5: Post-Deployment Configuration
 
-### 5.1 Schema Registration (Automatic)
+### 5.1 Run Post Deployment Scripts
+
+1. Run the ACR build and push script from the project root. Use the appropriate command for your shell:
+
+   - For Bash (Linux/macOS/WSL):
+
+     ```bash
+     bash infra/scripts/acr_build_push.sh
+     ```
+
+   - For PowerShell (Windows):
+
+     ```powershell
+     infra\scripts\acr_build_push.ps1
+     ```
+
+2. After the ACR build and push completes, run the post-deployment script:
+
+   - For Bash (Linux/macOS/WSL):
+
+     ```bash
+     bash infra/scripts/post_deployment.sh
+     ```
+
+   - For PowerShell (Windows):
+
+     ```powershell
+     .\infra\scripts\post_deployment.ps1
+     ```
+
+   > **Note:** Run this schema-registration step **before** configuring
+   > authentication (next step). At this point the API is still open, so no token
+   > is required. If you re-run it **after** enabling authentication, the script
+   > authenticates automatically using the deploying user's token — just ensure
+   > you are signed in with `az login`.
+
+### 5.2 Schema Registration (Automatic)
 
  > Want to customize the schemas for your own documents? [Learn more about adding your own schemas here.](./CustomizeSchemaData.md)
 
@@ -361,20 +397,50 @@ Schema registration process completed.
   ✅ Schema registration complete.
 ```
 
-### 5.2 Configure Authentication (Required)
+### 5.3 Configure Authentication (Required Manual Step)
 
-**This step is mandatory for application access:**
+**This step is mandatory.** Until it is completed the API has external ingress
+and is reachable without authentication, so run it immediately after the
+post-deployment script. Authentication is configured by a standalone script.
 
-1. Follow [App Authentication Configuration](./ConfigureAppAuthentication.md).
-2. Wait up to 10 minutes for authentication changes to take effect.
+Run the configuration script from the project root:
 
-### 5.3 Verify Deployment
+- For Bash (Linux/macOS/WSL):
+
+  ```bash
+  bash infra/scripts/configure_app_authentication.sh
+  ```
+
+- For PowerShell (Windows):
+
+  ```powershell
+  .\infra\scripts\configure_app_authentication.ps1
+  ```
+
+This enables Microsoft Entra ID (Easy Auth) on the API and Web container apps and
+sets the **API to return HTTP 401** for unauthenticated callers (fail closed).
+To reuse existing app registrations, pass their client ids
+(`-ApiClientId` / `-WebClientId` in PowerShell). For details, options, the
+admin-consent requirement, and the manual portal fallback, see
+[App Authentication Configuration](./ConfigureAppAuthentication.md).
+
+> **Note:** Allow up to 10 minutes for authentication changes to take effect.
+> Creating app registrations and granting admin consent requires the
+> **Application Administrator** role; if admin consent cannot be granted
+> automatically, a tenant administrator must consent to the API permission for
+> the Web app.
+
+> **Troubleshooting:** If the script fails with an authentication error (e.g.
+> `InteractionRequired` / `TokenCreatedWithOutdatedPolicies`), run `az logout`
+> then `az login` to refresh your token and re-run the script.
+
+### 5.4 Verify Deployment
 
 1. Access your application using the **Web App Endpoint** from the deployment output.
 2. Confirm the application loads successfully.
 3. Verify you can sign in with your authenticated account.
 
-### 5.4 Test the Application
+### 5.5 Test the Application
 
 **Quick Test Steps:**
 1. **Download Samples**: Get sample files from the [samples directory](../src/ContentProcessorAPI/samples) — use the `claim_date_of_loss/` or `claim_hail/` folders for auto claim documents.
@@ -506,32 +572,3 @@ Now that your deployment is complete and tested, explore these resources:
 - 🐛 **Issues:** Check [Troubleshooting Guide](./TroubleShootingSteps.md)
 - 💬 **Support:** Review [Support Guidelines](../SUPPORT.md)
 - 🔧 **Development:** See [Contributing Guide](../CONTRIBUTING.md)
-
----
-
-## Advanced: Deploy Local Changes
-
-If you've made local modifications to the code and want to deploy them to Azure, follow these steps to swap the configuration files:
-
-> **Note:** To set up and run the application locally for development, see the [Local Development Setup Guide](./LocalDevelopmentSetup.md).
-
-### Step 1: Rename Azure Configuration Files
-
-**In the root directory:**
-1. Rename `azure.yaml` to `azure_custom2.yaml`
-2. Rename `azure_custom.yaml` to `azure.yaml`
-
-### Step 2: Rename Infrastructure Files
-
-**In the `infra` directory:**
-1. Rename `main.bicep` to `main_custom2.bicep`
-2. Rename `main_custom.bicep` to `main.bicep`
-
-### Step 3: Deploy Changes
-
-Run the deployment command:
-```shell
-azd up
-```
-
-> **Note:** These custom files are configured to deploy your local code changes instead of pulling from the GitHub repository.

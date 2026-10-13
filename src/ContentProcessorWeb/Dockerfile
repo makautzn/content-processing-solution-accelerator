@@ -1,14 +1,14 @@
 # Stage 1: Build the React application
-FROM mcr.microsoft.com/vscode/devcontainers/javascript-node:22-bookworm AS builder
+FROM node:22.22.0-bookworm AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and pnpm lockfile
-COPY package.json pnpm-lock.yaml ./
+# Copy package.json, pnpm lockfile, and .npmrc (Microsoft Package Feed Proxy registry) first
+COPY package.json pnpm-lock.yaml .npmrc ./
 
-# Ensure pnpm is available
-RUN npm install -g pnpm@10.28.2
+# Ensure pnpm is available (installed from the Microsoft Package Feed Proxy)
+RUN npm install -g --registry=https://packagefeedproxy.microsoft.io/npm/ pnpm@10.28.2
 
 # Install project dependencies
 RUN pnpm install --frozen-lockfile
@@ -33,7 +33,7 @@ ENV REACT_APP_WEB_CLIENT_ID=APP_WEB_CLIENT_ID \
 RUN pnpm build
 
 # Stage 2: Serve the application with NGINX
-FROM mcr.microsoft.com/azurelinux/base/nginx:1.25
+FROM mcr.microsoft.com/azurelinux/base/nginx:1.28.3-8-azl3.0.20260722
 
 # Copy the built files from the previous stage
 COPY --from=builder /app/build /usr/share/nginx/html

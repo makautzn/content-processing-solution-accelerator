@@ -1,4 +1,3 @@
-# [Choice] Node.js version (use -bullseye variants on local arm64/Apple Silicon): 18, 16, 14, 18-bullseye, 16-bullseye, 14-bullseye, 18-buster, 16-buster, 14-buster
 ARG VARIANT=latest
 FROM mcr.microsoft.com/vscode/devcontainers/typescript-node:${VARIANT}
 
@@ -11,4 +10,4 @@ FROM mcr.microsoft.com/vscode/devcontainers/typescript-node:${VARIANT}
 # RUN su node -c "source /usr/local/share/nvm/nvm.sh && nvm install ${EXTRA_NODE_VERSION}"
 
 # [Optional] Uncomment if you want to install more global node packages
-# RUN su node -c "npm install -g <your-package-list -here>"
+# RUN su node -c "npm install -g --registry=https://packagefeedproxy.microsoft.io/npm/ <your-package-list -here>"
